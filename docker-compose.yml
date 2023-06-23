@@ -29,15 +29,32 @@ services:
       - .:/flyway/sql
     command: -schemas=users -connectRetries=60 -baselineOnMigrate=true migrate
   
-  adminer:
+  # adminer:
+  #   networks:
+  #     - backend
+  #   image: adminer
+  #   restart: always
+  #   ports:
+  #     - 8080:8080
+  #   depends_on:
+  #     - flyway
+
+  pgadmin:
     networks:
       - backend
-    image: adminer
+    image: dpage/pgadmin4
     restart: always
+    expose:
+      - "8080"
     ports:
-      - 8080:8080
+      - "8080:80"
+    volumes:
+      - ./pgadmin/local.json:/pgadmin4/servers.json
     depends_on:
-      - db
+      - flyway
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=username@example.com
+      - PGADMIN_DEFAULT_PASSWORD=password
 
   microservice:
     init: true
@@ -53,7 +70,6 @@ services:
     ports:
       - "3000:80"
     depends_on:
-      - "db"
-      - "flyway"
+      - flyway
 
 
