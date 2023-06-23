@@ -1,0 +1,59 @@
+version: '3.8'
+
+networks:
+  backend:
+    external: false
+    name: backend
+services:
+  db:
+    networks:
+      - backend
+    image: postgres:13-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=username
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=database
+  
+  flyway:
+    networks:
+      - backend
+    image: flyway/flyway:9-alpine
+    environment:
+      - FLYWAY_USER=username
+      - FLYWAY_PASSWORD=password
+      - FLYWAY_URL=jdbc:postgresql://db:5432/database
+    depends_on:
+      - db
+    volumes:
+      - .:/flyway/sql
+    command: -schemas=users -connectRetries=60 -baselineOnMigrate=true migrate
+  
+  adminer:
+    networks:
+      - backend
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+    depends_on:
+      - db
+
+  microservice:
+    init: true
+    networks:
+        - backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: microservice-container
+    image: microservice
+    expose:
+      - "3000"
+    ports:
+      - "3000:80"
+    depends_on:
+      - "db"
+      - "flyway"
+
+
